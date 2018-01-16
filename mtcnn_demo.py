@@ -40,7 +40,8 @@ def main(args):
       pnet, rnet, onet = align.detect_face.create_mtcnn(sess, None)
 
   minsize = 20  # minimum size of face
-  threshold = [0.6, 0.7, 0.7]  # three steps's threshold
+  threshold = [0.7, 0.6, 0.8]  # three steps's threshold
+  # threshold = [0.6, 0.7, 0.7]  # three steps's threshold
   factor = 0.709  # scale factor
 
   # Add a random key to the filename to allow alignment using multiple processes
@@ -48,11 +49,14 @@ def main(args):
   bounding_boxes_filename = os.path.join(output_dir, 'bounding_boxes_%05d.txt' % random_key)
 
   image_dir = args.input_dir
-  image_name = "lab_0001.jpg"
+  image_name = "tcm_1.png"
+  # image_name = "lab_0004.jpg"
 
   image_path = os.path.join(image_dir, image_name)
   print(image_path)
   print(os.path.exists(image_path))
+  boxes = []
+
   with open(bounding_boxes_filename, "w") as text_file:
     output_class_dir = os.path.join(output_dir, image_name)
     if not os.path.exists(output_class_dir):
@@ -98,23 +102,81 @@ def main(args):
           for i, det in enumerate(det_arr):
             det = np.squeeze(det)
             bb = np.zeros(4, dtype=np.int32)
+            # args.margin = 300
+
             bb[0] = np.maximum(det[0] - args.margin / 2, 0)
             bb[1] = np.maximum(det[1] - args.margin / 2, 0)
             bb[2] = np.minimum(det[2] + args.margin / 2, img_size[1])
             bb[3] = np.minimum(det[3] + args.margin / 2, img_size[0])
-            cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
-            scaled = misc.imresize(cropped, (args.image_size, args.image_size), interp='bilinear')
-            # nrof_successfully_aligned += 1
-            filename_base, file_extension = os.path.splitext(output_filename)
-            if args.detect_multiple_faces:
-              output_filename_n = "{}_{}{}".format(filename_base, i, file_extension)
-            else:
-              output_filename_n = "{}{}".format(filename_base, file_extension)
-            misc.imsave(output_filename_n, scaled)
-            text_file.write('%s %d %d %d %d\n' % (output_filename_n, bb[0], bb[1], bb[2], bb[3]))
+            boxes.append(bb)
+
+            # cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
+            # scaled = misc.imresize(cropped, (args.image_size, args.image_size), interp='bilinear')
+            # # nrof_successfully_aligned += 1
+            # filename_base, file_extension = os.path.splitext(output_filename)
+            # if args.detect_multiple_faces:
+            #   output_filename_n = "{}_{}{}".format(filename_base, i, file_extension)
+            # else:
+            #   output_filename_n = "{}{}".format(filename_base, file_extension)
+            # misc.imsave(output_filename_n, scaled)
+            # text_file.write('%s %d %d %d %d\n' % (output_filename_n, bb[0], bb[1], bb[2], bb[3]))
         else:
           print('Unable to align "%s"' % image_path)
           text_file.write('%s\n' % (output_filename))
+
+  # img = misc.imread(image_path)
+  # height = img.shape[0]
+  # width = img.shape[1]
+  # print((height, width))
+
+  # print(type(img))
+  # print(img.shape)
+  # print(img.ndim)
+  # print("--------------------------------")
+  # print(img.item(0, 0, 0))
+  # print(img.item(0, width - 1, 0))
+  # print(img.item(height - 1, 0, 0))
+  # print(img.item(height - 1, width - 1, 0))
+  # print("--------------------------------")
+  # return
+
+  img = cv2.imread(image_path)
+  height = img.shape[0]
+  width = img.shape[1]
+  # print((height, width))
+
+  # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+  # print(img.item(0, 0, 0))
+  # print(img.item(0, width - 1, 0))
+  # print(img.item(height - 1, 0, 0))
+  # print(img.item(height - 1, width - 1, 0))
+  # print(img.item(0, 0, 2))
+  # print(img.item(0, width - 1, 2))
+  # print(img.item(height - 1, 0, 2))
+  # print(img.item(height - 1, width - 1, 2))
+  # print("--------------------------------")
+
+  #
+  # bb = [932, 931, 1897, 2160]
+  # bb = [width - bb[0], height - bb[1], width - bb[2], height - bb[3]]
+  # boxes.append(bb)
+  # bb = [2263, 1104, 3344, 2431]
+  # bb = [width - bb[0], height - bb[1], width - bb[2], height - bb[3]]
+  # boxes.append(bb)
+  for bb in boxes:
+    # bb = [width - bb[0], height - bb[1], width - bb[2], height - bb[3]]
+    cv2.rectangle(img, (bb[0], bb[1]), (bb[2], bb[3]), (0,255,0), 1)
+  winname = "det"
+  cv2.namedWindow(winname, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+  # print(img)
+  # print(type(img)) # ndarray
+  # print(img.shape)
+  # cv2.resizeWindow(winname, tuple([shape for shape in img.shape]))
+  # cv2.resizeWindow(winname, [size for size in img.shape])
+  # cv2.resizeWindow(winname, img.shape[0]/3, img.shape[1]/3)
+  cv2.imshow(winname, img)
+  cv2.waitKey()
+  # img = img[:, :, 0:3]
 
 
 def parse_arguments(argv):
